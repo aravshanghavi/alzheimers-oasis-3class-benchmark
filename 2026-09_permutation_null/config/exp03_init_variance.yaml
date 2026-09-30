@@ -1,0 +1,15 @@
+experiment: exp03_init_variance
+description: >
+  Initialisation-variance arm. The data partition is held FIXED (fold 0) while
+  init_seed varies. Paired with exp01 (fold varies, init fixed) this decomposes
+  total variance into partition and initialisation components.
+  Answers Reviewer 3, comment 6.
+sweep:
+  losses: ["FA_FL", "WCE"]
+  folds:  [0]
+  init_seeds: [42, 88, 101, 256, 2024]
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

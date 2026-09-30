@@ -1,0 +1,28 @@
+experiment: exp05_leakage_ablation
+description: >
+  Measures what the flawed protocol was actually worth.
+
+  Identical to exp01 in every respect except one: groups are formed on the SCAN
+  SESSION (OAS1_XXXX_MRn) rather than the PARTICIPANT (OAS1_XXXX), reproducing
+  the partitioning used in the submitted manuscript and, by the same logic, in
+  the prior OASIS literature this work criticises. 19 of 347 participants carry
+  two sessions, so a fraction of each test partition comes from people the model
+  trained on.
+
+  Paired against exp01 fold for fold, the difference IS the leakage effect --
+  measured on this cohort, with everything else held constant, rather than
+  argued. It converts the manuscript's central claim from an assertion into an
+  experiment.
+
+  This is the ONLY configuration permitted to leak, and it says so in every
+  manifest it writes.
+split:
+  strategy: "grouped_kfold"
+  group_by: "session"
+  allow_participant_leakage: true
+  shuffle: false
+  n_splits: 5
+sweep:
+  losses: ["FA_FL"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]

@@ -1,0 +1,40 @@
+experiment: exp07_focal_gamma137
+description: >
+  MECHANISM CONTROL for FA-FL.
+
+  StandardFocalLoss and FrequencyAdaptiveFocalLoss in this codebase apply the
+  IDENTICAL alpha weighting. The single difference between them is that focal
+  uses one global gamma while FA-FL uses gamma_t = gamma_base + lambda*alpha_t,
+  giving per-class effective gammas of [1.367, 2.809, 5.824] on fold 0.
+
+  The majority class carries 78 percent of the images and therefore sets the
+  model's overall confidence level. Under FA-FL its effective gamma is 1.367.
+  Under the exp01 focal baseline it is 3.0. Gamma suppresses the gradient from
+  confident predictions, so a lower gamma on the dominant class raises
+  confidence, and confidence is what ECE measures.
+
+  This arm sets a CONSTANT gamma of 1.37, matched to FA-FL's majority-class
+  effective gamma, holding everything else identical.
+
+  READING THE RESULT
+    If this arm reaches ECE close to FA-FL's, the calibration advantage is a
+    property of the majority-class gamma and NOT of frequency adaptation. The
+    manuscript must then report FA-FL's calibration descriptively and drop any
+    mechanistic claim.
+    If this arm does not reach it, frequency adaptation is doing work that a
+    single equivalent gamma cannot reproduce, and the mechanistic claim is
+    supported.
+
+  Either outcome is reportable. This is the experiment that decides which.
+loss:
+  params:
+    FocalLoss: {gamma: 1.37}
+sweep:
+  losses: ["FocalLoss"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

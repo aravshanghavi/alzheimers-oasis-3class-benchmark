@@ -1,0 +1,86 @@
+experiment: exp15_age60_unweighted
+description: >
+  C1. UNWEIGHTED CROSS-ENTROPY REFERENCE ON THE PRIMARY (AGE-60, CDR-ASSESSED)
+  COHORT. Five grouped folds, one objective, one initialisation seed.
+
+  WHY THIS ARM EXISTS
+
+  Every arm reported on the restricted cohort so far applies some form of
+  imbalance correction: weighted cross-entropy, LDAM margins, focal
+  down-weighting, FA-FL, or Class-Balanced at beta 0.9999. A reviewer asking
+  "what does the same network do with no imbalance correction at all?" currently
+  has no answer on this cohort. Without that reference, every claimed gain is
+  measured against other corrected objectives, never against the null of doing
+  nothing.
+
+  HOW THE REFERENCE IS OBTAINED
+
+  Not by adding a new loss class. ClassBalanced at beta = 0.999 IS unweighted
+  cross-entropy on this data, numerically, because the effective-number term
+  (1 - beta^n)/(1 - beta) saturates at 1/(1 - beta) = 1e3 for every class here
+  (the smallest training class has 3,355 images). exp02's own header records the
+  same degeneracy on the full cohort and is why beta 0.999 was superseded by
+  0.9999 there. What was a defect for exp02 is exactly the reference wanted
+  here, so the degenerate setting is used deliberately and named as such.
+
+  MEASURED WEIGHTS, NOT ASSERTED ONES
+
+  Computed from the actual restricted-cohort training counts recorded in the
+  exp10 manifests, with the same formula src/losses.py ClassBalancedLoss uses
+  (weights normalised to sum to the number of classes):
+
+    fold 0  counts [13420, 8540, 3355]  weights [0.988044, 0.988235, 1.023720]
+    fold 1  counts [12993, 8662, 3538]  weights [0.990081, 0.990249, 1.019670]
+    fold 2  counts [13420, 8662, 3355]  weights [0.988052, 0.988220, 1.023728]
+    fold 3  counts [13359, 8418, 3599]  weights [0.990660, 0.990876, 1.018464]
+    fold 4  counts [13359, 8540, 3538]  weights [0.990073, 0.990264, 1.019662]
+
+  Maximum departure from 1.0 over all folds and classes: 0.023728 (fold 2,
+  Demented). The full-cohort counterpart retained at
+  2026-08_srep_revision_participant_level/experiments/exp02_class_balanced/
+  _superseded_beta0999/ has a maximum departure of 0.025270. So the restricted
+  cohort is marginally CLOSER to uniform than the full one, which is the
+  opposite of the intuition that a less imbalanced cohort needs a larger
+  correction, and it is a consequence of saturation, not of balance.
+
+  A 2.4 percent maximum deviation on one class is well inside run-to-run
+  initialisation noise on this cohort, so this arm is reported as an unweighted
+  cross-entropy reference and named that way in the manuscript. It is NOT
+  reported as a second Class-Balanced result.
+
+  READING THE RESULT
+
+    Every corrected arm beats this reference on macro-F1 by more than the
+    initialisation spread: imbalance correction is doing measurable work on the
+    restricted cohort, and the comparisons already reported have a floor.
+
+    This reference matches or beats the corrected arms: on a cohort whose
+    majority share is only 51.2 percent, imbalance correction buys nothing, and
+    that is a finding about the cohort that belongs in the paper.
+
+    Accuracy near the 51.204819 percent constant-predictor value with macro-F1
+    near 0.33: the network learned the prior and nothing else under this
+    objective, which bounds how much of any arm's accuracy is signal.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+loss:
+  params:
+    # Deliberately the degenerate setting. See the header. This does NOT change
+    # exp02 or exp10, whose own configs pin beta 0.9999 for themselves.
+    ClassBalanced: {beta: 0.999, gamma: 0.0}
+
+sweep:
+  losses: ["ClassBalanced"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

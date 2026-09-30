@@ -1,0 +1,85 @@
+experiment: exp17_age60_multislice
+description: >
+  C4. 2.5D MULTI-SLICE ON THE PRIMARY (AGE-60, CDR-ASSESSED) COHORT.
+  Two objectives, five grouped folds, one initialisation seed. Ten runs.
+
+  WHY THIS ARM EXISTS
+
+  exp04 tested 2.5D against 2D on the FULL cohort and found nothing: no metric
+  improved significantly, and the paper reports that as a result rather than as
+  an acknowledged limitation. The primary cohort is now the restricted one, and
+  the 2D-versus-3D limitation is stated about the primary analysis, so the
+  evidence answering it has to exist on the primary cohort too. A reviewer is
+  entitled to point out that the only multi-slice evidence comes from a cohort
+  that is no longer the headline.
+
+  DESIGN
+
+  data.context_slices = 3 packs slices i-1, i, i+1 into the three input channels
+  instead of replicating one grayscale slice, exactly as exp04 does. Same
+  architecture, same input shape, same hyperparameters, no re-tuning. Both FA_FL
+  and WCE are run so that the 2.5D-versus-2D contrast can be made twice, against
+  the proposed objective and against the plain weighted baseline, which is a
+  stronger test than exp04's single FA-FL arm. Folds and split seed match exp10,
+  so the same participants are scored under both protocols and the comparison
+  against exp10's FA_FL and WCE runs is paired at the participant level.
+
+  CAVEATS CARRIED OVER FROM analysis/outputs/multislice_note.txt
+
+  1. BAND EDGES ARE CLAMPED. Slices at the edges of the retained band, indices
+     100 and 160, have no neighbour on one side and are clamped to the centre
+     slice. Those samples are therefore partially 2D: two of their three channels
+     are the same image. On the restricted cohort this matters more than it did on
+     the full one, because fewer participants means each clamped sample carries
+     more weight. State the clamped fraction in the manuscript.
+  2. Inter-slice spacing is not recoverable from the JPEG derivatives, so the
+     three channels are adjacent in index but of unknown physical separation.
+     Nothing here licenses a claim about true 3D volumetric models, which were
+     not tested and cannot be tested on 8-bit JPEG slices of a partial brain.
+  3. Hyperparameters are carried over from the 2D protocol without re-tuning.
+     Deliberate, and consistent with the rest of the revision.
+  4. MULTIPLICITY. exp04 tested seven metrics, giving a Bonferroni threshold of
+     0.0071. Running two objectives here doubles the comparison count. Declare
+     the family before reading the result and say which cells survive correction.
+  5. The fold-wise Wilcoxon companion cannot reach p < 0.05 with five folds; its
+     minimum attainable two-sided p is 0.0625. Report it for completeness only.
+
+  READING THE RESULT
+
+    No metric improves beyond its paired interval, as on the full cohort: the 2D
+    formulation is not discarding information a cheap 2.5D extension recovers,
+    and that answer now holds on the primary cohort. This is the expected and the
+    most useful outcome.
+
+    2.5D improves the Demented-class F1 with an interval excluding zero under
+    BOTH objectives: adjacent-slice context carries rare-class information that
+    the single-slice protocol drops, which would be a real result and would need
+    the clamped-edge fraction reported alongside it.
+
+    2.5D improves under one objective only: most likely noise at this sample
+    size. Do not report it as an effect without a second initialisation seed.
+
+  SCHEDULE NOTE
+
+  This is the drop-if-late arm. Per-run wall time is longer than the 2D runs
+  because three JPEGs are decoded per sample instead of one, and no age-60
+  multi-slice run has ever been timed. See RUN_TONIGHT.md for the estimate and
+  for how it was derived.
+
+data:
+  context_slices: 3
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+sweep:
+  losses: ["FA_FL", "WCE"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

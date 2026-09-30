@@ -1,0 +1,92 @@
+# ==============================================================================
+# Base configuration. Experiment configs override selected keys.
+# Every value here is recorded verbatim in each run's manifest.json.
+# ==============================================================================
+
+data:
+  root: "C:/Users/aravs/Desktop/Arav/Research/Divya_Maam/Data"
+  original_classes: ["Non Demented", "Very mild Dementia", "Mild Dementia", "Moderate Dementia"]
+  new_classes: ["Non Demented", "Very Mild Demented", "Demented"]
+  # 4-class index -> 3-class index. Mild(2) and Moderate(3) merge into Demented(2).
+  class_map: {0: 0, 1: 1, 2: 2, 3: 2}
+  image_size: [224, 224]
+  # 1 = plain 2D slice (submitted protocol). 3 = 2.5D, slices i-1,i,i+1 in RGB channels.
+  context_slices: 1
+
+split:
+  strategy: "grouped_kfold"   # grouped_kfold | grouped_holdout
+  group_by: "participant"     # participant | session  ('session' reproduces the SUBMITTED bug; test only)
+  n_splits: 5
+  fold: 0
+  # shuffle=False is the DEFAULT and is deliberate. StratifiedGroupKFold(shuffle=True)
+  # silently loses stratification in several scikit-learn releases (the shuffled
+  # count matrix is not re-mapped to group indices), so it degrades to plain
+  # GroupKFold. On this cohort, sklearn 1.5.2 with shuffle=True puts 3-6 Demented
+  # participants in a test fold; shuffle=False puts 4-5, and gives byte-identical
+  # folds on 1.5.2 and 1.8.0. Deterministic and version-independent.
+  # Only enable shuffle if you need multiple partitions AND your sklearn is patched;
+  # src/data.py probes for the defect at split time and refuses if it is present.
+  shuffle: false
+  split_seed: 42          # ignored unless shuffle: true
+  # grouped_kfold: validation is one fold of a second StratifiedGroupKFold over the dev set.
+  #   val_n_splits=5 -> 20% of dev -> ~16% of total, i.e. approx 64/16/20.
+  val_n_splits: 5
+  # Guard rail. When false (always, except the leakage ablation) a run aborts if
+  # any participant reaches two partitions. Set true ONLY to reproduce the flawed
+  # session-level protocol on purpose; the manifest then records that it was on.
+  allow_participant_leakage: false
+
+  # grouped_holdout only:
+  test_fraction: 0.20
+  val_fraction_of_dev: 0.1875
+
+model:
+  arch: "efficientnet_b0"
+  pretrained: true
+  head_hidden: 512
+  dropout: 0.7
+
+loss:
+  type: "FA_FL"             # WCE | FocalLoss | LDAM | FA_FL | ClassBalanced
+  params:
+    FA_FL:         {gamma_base: 1.0, lambda_val: 7.0}
+    FocalLoss:     {gamma: 3.0}
+    LDAM:          {s: 30.0, max_m: 0.5}
+    ClassBalanced: {beta: 0.999, gamma: 0.0}
+    WCE:           {}
+
+train:
+  batch_size: 32
+  num_workers: 4              # training loader only
+
+  # Evaluation loaders are configured separately and conservatively. Inference is
+  # a single pass with no augmentation, so worker parallelism buys almost nothing,
+  # while page-locked (pinned) buffers from several simultaneous loaders are what
+  # actually exhausts memory on a 6 GB laptop GPU. These values do not affect
+  # results -- batch size under torch.no_grad() with BatchNorm in eval mode is
+  # numerically irrelevant -- so they are safe to degrade automatically on OOM.
+  eval_batch_size: 32
+  eval_num_workers: 2
+  eval_pin_memory: false
+  total_epochs: 20
+  warmup_epochs: 5
+  lr_warmup: 1.0e-4
+  lr_finetune: 1.0e-5
+  weight_decay: 1.0e-4
+  eta_min: 1.0e-7
+  grad_accumulation_steps: 2
+  grad_max_norm: 1.0
+  early_stopping_patience: 5
+  # Submitted behaviour: stop on val_loss, checkpoint on val_acc. Kept for comparability.
+  early_stop_metric: "val_loss"     # val_loss | val_acc
+  checkpoint_metric: "val_acc"      # val_acc  | val_loss
+  amp: true
+
+eval:
+  ece_bins: 15
+  ece_binning: "equal_width"
+
+init_seed: 42
+deterministic: true
+strict_deterministic: false   # torch.use_deterministic_algorithms(True); can raise on some ops
+device: "auto"                # auto | cuda | cpu

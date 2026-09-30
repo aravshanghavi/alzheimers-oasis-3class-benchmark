@@ -1,0 +1,17 @@
+# Pinned where the pin matters. Exact versions per run are in <run_dir>/environment.txt.
+#
+# scikit-learn is PINNED, not floated: StratifiedGroupKFold's fold assignment
+# changed between releases, so a different version produces a different
+# participant partition from the same seed. For a paper whose contribution is a
+# reproducible evaluation protocol, the split must not depend on a minor upgrade.
+scikit-learn==1.5.2
+
+torch>=2.0
+torchvision>=0.15
+numpy>=1.24
+pandas>=2.0
+Pillow>=9.5
+PyYAML>=6.0
+matplotlib>=3.7
+scipy>=1.10          # optional: sharpens the Grad-CAM brain mask; degrades gracefully
+grad-cam>=1.4          # pytorch_grad_cam, needed only by analysis/a04_gradcam_quant.py

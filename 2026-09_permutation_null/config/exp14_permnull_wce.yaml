@@ -1,0 +1,73 @@
+experiment: exp14_permnull_wce
+description: >
+  PERMUTED-LABEL NULL on the CDR-assessed age-60 cohort.
+
+  WHAT THIS MEASURES
+
+  The headline result of this project is a null: no training objective's
+  accuracy is distinguishable from a constant majority-class predictor on the
+  restricted cohort, while macro-F1 sits well above it. A null needs a measured
+  floor. This arm measures it. Participant-level diagnosis labels are permuted
+  within the training and validation splits, the test fold keeps its true
+  labels, and the complete unmodified pipeline then runs on top, including
+  five-fold cross-validation, early stopping, checkpoint selection on validation
+  accuracy and temperature fitting. Whatever pooled macro-F1 and accuracy come
+  out the far end is what this pipeline manufactures from nothing.
+
+  WHY WEIGHTED CROSS-ENTROPY AND NOT FA-FL
+
+  Deliberately not the authors' own objective. WCE is the conventional baseline,
+  it reproduces the manuscript's Table 4, and choosing it means the measured
+  floor cannot be read as having been selected to flatter the proposed method.
+
+  WHAT EACH OUTCOME MEANS, STATED BEFORE THE RUN
+
+  Null pooled macro-F1 centred near 0.33 with an upper envelope below about
+  0.42: the real arms at 0.41 to 0.54 sit clearly outside it, and the claim that
+  genuine discriminative signal exists survives with a measured rather than an
+  assumed floor.
+
+  Null upper envelope above about 0.42: LDAM (0.4068) and FA-FL (0.4453) fall
+  inside the null, the sentence "real discriminative signal exists" must come
+  out of the paper for those arms, and the remaining positive claims (the
+  composition decomposition, the label defect, the nWBV comparison, the
+  calibration-criterion finding and the mechanism null) stand without it.
+
+  Null accuracy is expected to sit near the 51.2 percent majority share for
+  every seed. An accuracy null materially above that would indicate the
+  permutation is not doing what it claims and the run should be discarded rather
+  than reported.
+
+  POWER CAVEAT, STATED BEFORE THE RUN
+
+  Five permutation seeds give five null replicates. That supports a statement
+  about where the replicates fall and a permutation p-value with a floor of
+  1/6 = 0.167. It does not support a fitted tail or a quantile estimate. Report
+  the replicates individually. Ten seeds halve the p-value floor and cost twice
+  the GPU time.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+permutation:
+  enabled: true
+  scope: "train_val"      # test fold always keeps its true labels
+  seed: 1                 # overridden per run by run_permnull.py --perm-seed
+
+loss:
+  params:
+    ClassBalanced: {beta: 0.9999, gamma: 0.0}
+
+sweep:
+  losses: ["WCE"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]        # held fixed: only the labels vary between replicates
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

@@ -1,0 +1,32 @@
+experiment: exp12_age60_gamma200
+description: >
+  GAMMA CONTROL on the train-matched age-60 cohort, constant gamma 2.0.
+
+  Canonical focal (Lin et al.). On the FULL cohort this is the arm nearest FA-FL's effective gamma of about 1.9. On the RESTRICTED cohort FA-FL's measured effective gamma is 2.694, so if the effective-gamma explanation holds, FA-FL should move away from this arm and toward exp13's gamma 2.69. This arm's job on this cohort is to be the one FA-FL LEAVES.
+
+  Read alongside exp10_age60_main. The question this arm set answers is whether
+  the constant-gamma arm that FA-FL most resembles MOVES when the cohort's class
+  imbalance changes. If it does, FA-FL is focal loss at its effective gamma and
+  the mechanistic claim fails. If it does not, frequency adaptation is doing
+  something a scalar cannot.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+loss:
+  params:
+    FocalLoss: {gamma: 2.0}
+
+sweep:
+  losses: ["FocalLoss"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

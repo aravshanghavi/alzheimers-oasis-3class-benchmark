@@ -1,0 +1,85 @@
+experiment: exp10_age60_main
+description: >
+  TRAIN-MATCHED AGE-60 COHORT. Five objectives x five grouped folds, trained and
+  evaluated on CDR-assessed participants aged 60 and over.
+
+  WHY THIS ARM EXISTS
+
+  Every age-restricted number reported so far came from a model TRAINED on the
+  full cohort -- including the 147 non-demented participants with no recorded CDR
+  and the 181 aged under 60 -- and merely EVALUATED on the restricted subset.
+  That cannot separate "a real dementia signal survives restriction" from "a
+  model that learned an age contrast still ranks older participants correctly".
+  Training on the restricted cohort is the honest comparison and it has never
+  been run.
+
+  SECOND PURPOSE: THIS IS ALSO A MECHANISM TEST FOR FA-FL
+
+  Restriction changes the imbalance regime, and FA-FL's gamma is a function of
+  the imbalance. On the full cohort the participant split is 266/58/23, giving
+  alpha of roughly [0.05, 0.26, 0.69], gamma_t of roughly [1.4, 2.8, 5.8] and a
+  frequency-weighted effective gamma near 1.9. Restricting leaves 85/58/23 and
+  the majority share falls from about 77 percent to 51.2 percent.
+
+  The restricted values are now MEASURED, not estimated. Fold 0 of this cohort
+  has training class counts [13420, 8540, 3355], giving alpha =
+  [0.152174, 0.239130, 0.608696], gamma_t = [2.065, 2.674, 5.261] and a
+  frequency-weighted effective gamma of 2.694 (2.700 participant-weighted). An
+  earlier version of this file estimated 2.8; that figure was an arithmetic
+  error, corrected on 2026-09-19 from the run manifests of the wiring check and
+  recorded in analysis/REGISTRY_CHANGELOG.md. Every run recomputes these values
+  from its own training fold and writes them to its manifest.
+
+  PRE-REGISTERED PREDICTION
+
+  If FA-FL is simply focal loss at its frequency-weighted effective gamma, then
+  the constant-gamma arm it most closely resembles must MOVE with the cohort:
+  nearest to gamma 2.0 on the full cohort, nearest to gamma 2.69 here, with
+  gamma 3.0 second. That migration is the signature of the null hypothesis.
+  exp13_age60_gamma269 supplies the arm at the measured value.
+
+  READING THE RESULT
+
+    FA-FL tracks Focal gamma 3.0 on this cohort, having tracked gamma 2.0 on the
+    full one: the effective-gamma explanation is confirmed. Report FA-FL's
+    calibration descriptively, state that a single equivalent gamma reproduces
+    it, and drop the mechanistic claim.
+
+    FA-FL tracks neither, or keeps an advantage concentrated in the rare classes
+    that no constant gamma reproduces: frequency adaptation is doing work a
+    scalar cannot, and the mechanistic claim is supported.
+
+    Accuracy collapses toward the majority-class baseline for every arm: the
+    full-cohort headline was substantially an age contrast, which is the primary
+    finding of this arm regardless of what FA-FL does.
+
+  POWER CAVEAT, STATED BEFORE THE RUN
+
+  166 participants with 23 Demented across five folds leaves roughly four or
+  five Demented per test fold. Intervals will be wide and per-class F1 for the
+  smallest class will be unstable. That is a property of the cohort, not of the
+  design, and it belongs in the paper rather than in a footnote discovered
+  during review.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+loss:
+  params:
+    # Matches the corrected exp02 arm. At beta 0.999 the effective-number term
+    # saturates for every class here and degenerates to unweighted cross-entropy.
+    ClassBalanced: {beta: 0.9999, gamma: 0.0}
+
+sweep:
+  losses: ["WCE", "LDAM", "FocalLoss", "FA_FL", "ClassBalanced"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

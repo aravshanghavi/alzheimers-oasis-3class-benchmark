@@ -1,0 +1,15 @@
+experiment: exp01_main_sweep
+description: >
+  Main sweep on the corrected participant-level protocol.
+  4 losses x 5 grouped CV folds. Split seed and init seed fixed; the fold varies.
+  Hyperparameters are carried over unchanged from the pre-correction protocol
+  and are deliberately NOT re-tuned (see response to Reviewer 3, comment 3).
+sweep:
+  losses: ["WCE", "LDAM", "FocalLoss", "FA_FL"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

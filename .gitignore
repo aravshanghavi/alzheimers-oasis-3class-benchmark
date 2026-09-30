@@ -8,3 +8,9 @@
 !*.py
 !/.gitignore
 !/README.md
+!*.yaml
+!*.yml
+!requirements.txt
+!README.md
+!RUN_PROTOCOL.md
+!*.bat

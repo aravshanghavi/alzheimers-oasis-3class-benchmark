@@ -1,0 +1,65 @@
+experiment: exp13_age60_gamma269
+description: >
+  GAMMA CONTROL AT FA-FL'S OWN EFFECTIVE EXPONENT. Constant gamma 2.69, on the
+  train-matched age-60 cohort.
+
+  WHY 2.69 AND NOT A ROUND NUMBER
+
+  This is the arm the mechanism test is actually about, and its value was
+  MEASURED rather than guessed. Fold 0 of the restricted cohort has training
+  class counts [13420, 8540, 3355], which give normalised inverse-frequency
+  weights alpha = [0.152174, 0.239130, 0.608696] and therefore FA-FL exponents
+  gamma_t = 1.0 + 7.0 * alpha = [2.065217, 2.673913, 5.260869]. Weighting those
+  by the class frequencies gives a frequency-weighted effective exponent of
+  2.694081 (2.700000 if participants rather than images are the weight). Both
+  numbers are read from the run manifests of the 2026-09-19 wiring check; the
+  earlier README estimate of "roughly 2.8" came from assumed participant shares
+  and was wrong by about 0.11.
+
+  WHAT THIS ARM FIXES
+
+  Without it the ladder is 1.37, 2.00 and 3.00, and the nearest arm to FA-FL's
+  actual effective exponent is 0.31 away. That makes one outcome unreadable: if
+  FA-FL turns out distinguishable from all three, there is no way to tell
+  whether frequency adaptation is doing something a scalar cannot, or whether
+  the right scalar simply was never tested. This arm removes that ambiguity. It
+  sits 0.004 from the measured effective value.
+
+  PRE-REGISTERED PREDICTION
+
+  Under the null that FA-FL is focal loss at its effective exponent, THIS is
+  the arm it should be closest to, on this cohort, by a clear margin over
+  gamma 2.00 and gamma 3.00. If FA-FL remains distinguishable from a constant
+  2.69 at the corrected threshold, the effective-exponent explanation is
+  inadequate and the mechanistic claim survives its sharpest available test.
+
+  A LIMIT OF THIS ARM, STATED IN ADVANCE
+
+  A constant-gamma arm is constant across folds by construction, while FA-FL's
+  realized effective exponent is recomputed from each fold's own training split
+  and will drift slightly around 2.69. The drift is expected to be small because
+  StratifiedGroupKFold holds class proportions near constant, but it is not
+  assumed: every run writes criterion.effective_gamma into its manifest, and
+  figure f19f plots the realized values for all five FA-FL folds against this
+  arm's fixed 2.69 so the residual mismatch is visible and measured.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+loss:
+  params:
+    FocalLoss: {gamma: 2.69}
+
+sweep:
+  losses: ["FocalLoss"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

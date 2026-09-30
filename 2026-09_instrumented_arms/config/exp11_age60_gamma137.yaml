@@ -1,0 +1,32 @@
+experiment: exp11_age60_gamma137
+description: >
+  GAMMA CONTROL on the train-matched age-60 cohort, constant gamma 1.37.
+
+  FA-FL's MAJORITY-class gamma on the FULL cohort (1.37). Carried over so the full-cohort and restricted comparisons use the same arm set. On the restricted cohort FA-FL's majority gamma rises to about 2.2, so this arm is no longer the matched one -- that is the point of keeping it.
+
+  Read alongside exp10_age60_main. The question this arm set answers is whether
+  the constant-gamma arm that FA-FL most resembles MOVES when the cohort's class
+  imbalance changes. If it does, FA-FL is focal loss at its effective gamma and
+  the mechanistic claim fails. If it does not, frequency adaptation is doing
+  something a scalar cannot.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+loss:
+  params:
+    FocalLoss: {gamma: 1.37}
+
+sweep:
+  losses: ["FocalLoss"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

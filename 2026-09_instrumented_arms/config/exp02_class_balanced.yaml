@@ -1,0 +1,35 @@
+experiment: exp02_class_balanced
+description: >
+  Class-Balanced loss (Cui et al., CVPR 2019), the additional imbalance-aware
+  baseline requested by Reviewer 1, comment 6.
+
+  BETA SELECTION. The effective number (1 - beta^n)/(1 - beta) saturates at
+  1/(1 - beta), so beta is only meaningful relative to the class sizes. With
+  training-set class counts of roughly 67k / 14k / 5k images:
+
+    beta = 0.999   -> cap 1e3   -> weights [0.999, 0.999, 1.003]  (degenerate:
+                                   every class saturates, so the objective is
+                                   numerically unweighted cross-entropy)
+    beta = 0.9999  -> cap 1e4   -> weights [0.638, 0.854, 1.508]  (SELECTED)
+    beta = 0.99999 -> cap 1e5   -> weights [0.215, 0.819, 1.966]  (collapses
+                                   onto plain inverse-frequency weighting, i.e.
+                                   reproduces weighted cross-entropy)
+
+  beta = 0.9999 is the only value in the grid used by Cui et al. that falls
+  inside the range of class sizes present here. It is selected on that structural
+  ground and is NOT tuned against validation performance.
+
+  The earlier beta = 0.999 runs are retained under _superseded_beta0999/ and are
+  reported separately as an unweighted cross-entropy reference.
+loss:
+  params:
+    ClassBalanced: {beta: 0.9999, gamma: 0.0}
+sweep:
+  losses: ["ClassBalanced"]
+  folds:  [0, 1, 2, 3, 4]
+  init_seeds: [42]
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42

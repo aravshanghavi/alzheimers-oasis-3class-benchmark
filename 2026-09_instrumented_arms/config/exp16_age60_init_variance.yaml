@@ -1,0 +1,72 @@
+experiment: exp16_age60_init_variance
+description: >
+  C2. INITIALISATION VARIANCE ON THE PRIMARY (AGE-60, CDR-ASSESSED) COHORT.
+  One objective (WCE), five grouped folds, four additional initialisation seeds.
+
+  WHY THIS ARM EXISTS
+
+  exp03 decomposed total variance into a partition component and an
+  initialisation component, but it did so on the FULL cohort and with the
+  partition held fixed at fold 0. Neither property transfers. The restricted
+  cohort has 166 participants with 23 Demented, so roughly four or five Demented
+  participants per test fold, and initialisation noise on a rare class is not the
+  same quantity at that sample size. Every restricted-cohort interval reported so
+  far is a bootstrap over participants at a single seed, which cannot separate
+  "this arm is better" from "this seed was luckier".
+
+  DESIGN, AND WHY IT DIFFERS FROM exp03
+
+  exp03 varies the seed at fold 0 only: losses ["FA_FL", "WCE"], folds [0],
+  init_seeds [42, 88, 101, 256, 2024]. That is 10 runs and it isolates the
+  initialisation component cleanly, but it says nothing about whether the
+  initialisation spread is itself fold dependent.
+
+  Here the seed is crossed with all five folds on one objective. Seeds 88, 101,
+  256 and 2024 are exp03's four non-42 seeds, reused verbatim so the two
+  decompositions are comparable rather than merely similar. Seed 42 is NOT
+  repeated: the five WCE runs at seed 42 on this cohort already exist in
+  exp10_age60_main and are read straight from there, which is why this file
+  queues 4 seeds x 5 folds = 20 runs and not 25. Pooling this arm with exp10's
+  WCE runs gives the full 5 x 5 seed-by-fold grid.
+
+  THE OBJECTIVE IS WCE, NOT FA-FL, AND THAT IS DELIBERATE
+
+  WCE is the simplest arm with no gamma and no margin, so its seed-to-seed spread
+  is the cleanest available estimate of the floor that any arm's advantage has to
+  clear. Running FA-FL instead would confound initialisation noise with the
+  frequency-adaptive gamma this revision is testing. If the budget allows a
+  second objective later, FA-FL is the one to add, and it should be added as a
+  separate config rather than by editing this one.
+
+  READING THE RESULT
+
+    Initialisation spread is small relative to the arm-to-arm differences already
+    reported: those differences survive, and the intervals in the paper can be
+    quoted as they stand with this arm cited as the noise floor.
+
+    Initialisation spread is comparable to the arm-to-arm differences: no ranking
+    of objectives on this cohort is supportable at n = 1 seed, and every
+    restricted-cohort comparison has to be restated as "within initialisation
+    noise". That would be an uncomfortable finding and it is the reason this arm
+    is a MUST rather than a nice-to-have.
+
+    Spread differs markedly between folds: the decomposition is not separable,
+    and the variance components should be reported per fold rather than pooled.
+
+data:
+  cohort:
+    filter: "cdr_age"
+    min_age: 60
+    require_cdr: true
+
+sweep:
+  losses: ["WCE"]
+  folds:  [0, 1, 2, 3, 4]
+  # exp03's four non-42 seeds. Seed 42 lives in exp10_age60_main; see the header.
+  init_seeds: [88, 101, 256, 2024]
+
+split:
+  strategy: "grouped_kfold"
+  group_by: "participant"
+  n_splits: 5
+  split_seed: 42
