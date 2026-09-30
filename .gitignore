@@ -1,0 +1,10 @@
+# Ignore everything by default
+*
+
+# Re-include directories so Git can look inside them for allowed files
+!*/
+
+# Allowed files
+!*.py
+!/.gitignore
+!/README.md
