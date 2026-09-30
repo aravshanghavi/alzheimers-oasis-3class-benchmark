@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: "Alzheimer's OASIS 3-Class Benchmark"
+message: "If you use this software, please cite this repository."
+type: software
+
+authors:
+  - family-names: "Shanghavi"
+    given-names: "Arav"
+  - family-names: "Rao"
+    given-names: "Divya"
+
+repository-code: "https://github.com/aravshanghavi/alzheimers-oasis-3class-benchmark"
+
+license: Manipal Institute of Technology
+
+version: "1.0.0"
+
+date-released: "2026-09-30"
